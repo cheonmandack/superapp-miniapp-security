@@ -1,0 +1,16 @@
+[
+  {
+    "id": "app_a",
+    "name": "미니앱 A (쿠키 생성)",
+    "description": "세션 쿠키를 생성하는 서비스입니다.",
+    "path": "assets/miniapp_a/index.html",
+    "icon": "https://cdn-icons-png.flaticon.com/512/5968/5968260.png"
+  },
+  {
+    "id": "app_b",
+    "name": "미니앱 B (쿠키 탈취)",
+    "description": "다른 앱의 정보를 확인하는 서비스입니다.",
+    "path": "assets/miniapp_b/index.html",
+    "icon": "https://cdn-icons-png.flaticon.com/512/5968/5968242.png"
+  }
+]

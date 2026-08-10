@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>MiniApp A</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background-color: #e3f2fd; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background-color: #2196f3; color: white; border: none; border-radius: 5px; }
+        .status { margin-top: 20px; padding: 10px; border: 1px solid #ccc; background: white; }
+    </style>
+</head>
+<body>
+    <h1>MiniApp A (Cookie Setter)</h1>
+    <p>이 앱은 비밀 쿠키를 생성합니다.</p>
+    <button onclick="setCookie()">비밀 쿠키 굽기</button>
+    <div class="status" id="status">상태: 대기 중</div>
+
+    <script>
+        function setCookie() {
+            // CMCS 취약점 재현을 위한 쿠키 설정
+            const cookieValue = "SECRET_TOKEN_APP_A_" + Math.floor(Math.random() * 1000);
+            document.cookie = "auth_token=" + cookieValue + "; path=/; max-age=3600";
+            document.getElementById('status').innerText = "생성된 쿠키: " + document.cookie;
+            console.log("Cookie set in App A: " + document.cookie);
+        }
+    </script>
+</body>
+</html>

