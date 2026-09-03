@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
+import 'package:webview_flutter/webview_flutter.dart';
 import 'package:superapp/miniapp/view_layer/renderer.dart';
 
 void main() => runApp(MyApp());
@@ -53,6 +54,18 @@ class _MiniAppListPageState extends State<MiniAppListPage> {
       appBar: AppBar(
         title: Text('슈퍼앱 미니 프로그램 대시보드'),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: () async {
+              await CookieManager().clearCookies();
+              secureNativeStorage.clear(); // 보안 저장소도 함께 비움
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('모든 쿠키 및 보안 데이터가 초기화되었습니다.')),
+              );
+            },
+          )
+        ],
       ),
       body: _miniapps.isEmpty
           ? Center(child: CircularProgressIndicator())

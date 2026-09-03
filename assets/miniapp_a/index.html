@@ -1,3 +1,4 @@
+// miniapp_a
 <!DOCTYPE html>
 <html>
 <head>
@@ -17,7 +18,7 @@
 
     <script>
         function setCookie() {
-            // CMCS 취약점 재현을 위한 쿠키 설정
+            // 쿠키 설정
             const cookieValue = "SECRET_TOKEN_APP_A_" + Math.floor(Math.random() * 1000);
             document.cookie = "auth_token=" + cookieValue + "; path=/; max-age=3600";
             document.getElementById('status').innerText = "생성된 쿠키: " + document.cookie;

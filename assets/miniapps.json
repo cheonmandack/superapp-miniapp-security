@@ -12,5 +12,19 @@
     "description": "다른 앱의 정보를 확인하는 서비스입니다.",
     "path": "assets/miniapp_b/index.html",
     "icon": "https://cdn-icons-png.flaticon.com/512/5968/5968242.png"
+  },
+  {
+    "id": "app_a_secure",
+    "name": "미니앱 A (Secure)",
+    "description": "보안 샌드박스가 적용되어 안전하게 데이터를 저장하는 서비스입니다.",
+    "path": "assets/miniapp_A_secure/index.html",
+    "icon": "https://cdn-icons-png.flaticon.com/512/5968/5968260.png"
+  },
+  {
+    "id": "app_b_secure",
+    "name": "미니앱 B (Secure Attack)",
+    "description": "격리된 환경에서 타 앱의 데이터 탈취 시도가 차단됨을 확인하는 서비스입니다.",
+    "path": "assets/miniapp_B_secure/index.html",
+    "icon": "https://cdn-icons-png.flaticon.com/512/5968/5968242.png"
   }
 ]

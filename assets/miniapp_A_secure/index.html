@@ -1,0 +1,49 @@
+// minapp Ai 
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>MiniApp Ai (Isolated)</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline';">
+    <style>
+        body { font-family: sans-serif; padding: 20px; background-color: #e3f2fd; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background-color: #2196f3; color: white; border: none; border-radius: 5px; }
+        .status { margin-top: 20px; padding: 10px; border: 1px solid #ccc; background: white; }
+    </style>
+    
+    <script>
+        /* [핵심] 슈퍼앱의 미니앱 엔진을 흉내 내는 초경량 프레임워크 */
+        window.getApp = null;
+        
+        // 1. App() 선언부 처리
+        window.App = function(config) {
+            window.getApp = () => config; // 다른 페이지에서 전역 데이터에 접근할 수 있게 함
+            if(config.onLaunch) config.onLaunch();
+        };
+
+        // 2. Page() 선언부 처리
+        window.Page = function(config) {
+            document.addEventListener("DOMContentLoaded", function() {
+                if(config.onLoad) config.onLoad();
+                
+                // HTML의 버튼(saveBtn)을 찾아 Page 객체의 함수와 연결
+                const btn = document.getElementById('saveBtn');
+                if(btn && config.onMyFunc) {
+                    btn.addEventListener('click', config.onMyFunc);
+                }
+            });
+        };
+    </script>
+</head>
+<body>
+    <h1>MiniApp Ai (Secure Sandbox)</h1>
+    <p>이 앱은 격리된 네이티브 브릿지를 통해 안전하게 데이터를 저장합니다.</p>
+    
+    <button id="saveBtn">안전한 토큰 저장</button>
+    <div class="status" id="status">상태: 대기 중</div>
+
+    <!-- 듀얼 스레드 구조처럼 앱 전역 관리와 페이지 관리를 순서대로 로드 -->
+    <script src="app.js"></script>
+    <script src="index.js"></script>
+</body>
+</html>

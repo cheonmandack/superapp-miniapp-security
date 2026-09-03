@@ -48,6 +48,8 @@ flutter:
     - assets/miniapp/
     - assets/miniapp_a/
     - assets/miniapp_b/
+    - assets/miniapp_A_secure/
+    - assets/miniapp_B_secure/
     - assets/miniapps.json
    #- images/a_dot_ham.jpeg
 
