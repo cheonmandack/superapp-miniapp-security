@@ -15,21 +15,29 @@
 ---
 
 ## 💡 프로젝트 개요
-슈퍼앱(SuperApp) 호스트 내에서 돌아가는 웹 기반 미니앱(MiniApp) 환경은 편리하지만, 로컬 파일(`file://`) 기반 렌더링 시 **동일 출처 정책(Same-Origin Policy, SOP)이 무력화**되는 심각한 보안 결함이 존재합니다.
-
-본 프로젝트는:
-* 브라우저 기본 웹 저장소(`document.cookie`) 사용 시 발생하는 데이터 탈취 위험성을 시연하고,
-* **Native Bridge**와 **App ID 기반 데이터 격리(Sandbox)**를 적용하여 보안 위협을 원천 차단하는 구조를 실증합니다.
+- 파일 스킴 쿠키를 허용한 환경에서 미니앱 간 쿠키 공유 위험 재현
+- Native Bridge의 setStorage / getStorage API 구현
+- App ID별 인메모리 데이터 구분 및 요청 권한 검사
+- 다른 미니앱의 App ID를 전달하는 데이터 조회 시나리오 검증
+본 프로젝트에서 샌드박스는 호스트가 관리하는 저장소와 접근 검사로 구성한 논리적 데이터 격리 구조를 의미합니다. 검증 범위는 쿠키 공유와 브릿지 저장소 접근 제어입니다.
 
 ---
 
-## 🚨 보안 문제점 및 취약점 (SOP 붕괴)
+## 🚨 보안 문제점 및 취약점
 
 안드로이드 WebView 환경에서 `setAcceptFileSchemeCookies(true)` 및 로컬 파일(`file://`) 스킴을 사용할 경우, 시스템은 모든 로컬 HTML 파일들을 **동일한 출처(Same Origin)**로 취급합니다.
 
-1. **SOP(동일 출처 정책) 무력화**: `assets/miniapp_a/index.html`과 `assets/miniapp_B_secure/index.html`이 서로 같은 출처로 인식됨.
-2. **쿠키 및 WebStorage 공유**: 특정 미니앱이 `document.cookie`에 저장한 세션 토큰이 기기 내 모든 미니앱에게 평문 노출됨.
-3. **쿠키 삭제 메커니즘의 한계**: 미니앱 종료 시 쿠키를 지우더라도, 멀티태스킹/동시 실행 상황이나 비정상 종료 시 탈취 위험을 완전히 막을 수 없음.
+1. **미니앱 간 쿠키 공유**
+파일 스킴 쿠키를 허용하면 같은 쿠키 저장소를 사용하는 미니앱 사이에서 세션 토큰 등 민감한 정보가 노출될 수 있습니다.
+
+2. **불완전한 App ID 검증**
+요청자가 전달한 App ID를 경로의 부분 문자열로 검사하므로, 빈 문자열이나 공통 문자열을 이용한 요청이 권한 검사를 통과할 수 있습니다.
+
+3. **브릿지 호출 주체 식별의 한계**
+미니앱의 에셋 경로를 기준으로 권한을 검사하여, iframe이나 이동한 페이지에서 브릿지를 호출하는 상황을 정확히 구분하기 어렵습니다.
+
+4. **인라인 스크립트 실행 허용**
+CSP에 'unsafe-inline'이 포함되어 있어, HTML에 악성 스크립트가 삽입되면 실행될 위험이 있습니다.
 
 ---
 
@@ -39,16 +47,27 @@
 
 ```mermaid
 graph TD
-    subgraph WebView Container
-        A[MiniApp A Secure] -->|1. SuperAppBridge.setStorage| B(Native Bridge)
-        C[MiniApp B Secure Attacker] -.->|2. Spoofed getStorage Request| B
+    subgraph WA["WebView A"]
+        A["MiniApp A Secure"]
     end
-    
-    subgraph Host Native Engine
-        B --> D{App ID Whitelist Verification}
-        D -->|Valid Request: app_a_secure| E[(Sandboxed Storage: app_a_secure)]
-        D -.->|Invalid Request: app_b_secure != app_a_secure| F[🚨 Access Denied / Blocked]
+
+    subgraph WB["WebView B"]
+        B["MiniApp B Secure"]
     end
+
+    subgraph HOST["Flutter 호스트"]
+        C["Native Bridge 요청 처리"]
+        D{"요청 App ID와 미니앱 에셋 경로 비교"}
+        E[("App ID별 인메모리 저장소")]
+        F["접근 거부"]
+
+        C --> D
+        D -->|"검사 통과"| E
+        D -->|"검사 실패"| F
+    end
+
+    A -->|"setStorage · app_a_secure"| C
+    B -.->|"getStorage · app_a_secure"| C
 ```
 
 * **웹 브라우저 저장소 금지**: `document.cookie`, `localStorage` 사용을 배제.
@@ -71,15 +90,36 @@ graph TD
 ## 🔐 시큐어 코딩 가이드라인 (Secure Coding Guidelines)
 
 ### 1. 🛡️ 슈퍼앱 호스트 엔진 (Android/Native 개발자)
-* **WebView 로컬 파일 보안 설정 제한**: `setAcceptFileSchemeCookies(true)` 등 취약한 옵션 사용 금지. `WebViewAssetLoader` 사용 권장.
-* **Native Bridge 요청자(Caller) Identity 검증**: JS가 전달하는 App ID를 맹신하지 말고, 네이티브 단에서 브릿지 호출 주체의 실체(Context/App ID)를 직접 대조·검증할 것.
-* **미니앱별 데이터 물리적/논리적 격리**: `App ID`별로 네이티브 저장 공간(EncryptedSharedPreferences, Room SQLCipher 등)을 세분화하여 저장.
+- **로컬 콘텐츠와 출처 정책 관리**
+WebViewAssetLoader를 통한 HTTPS 기반 로컬 콘텐츠 로딩을 검토합니다. 미니앱별 출처 구성, 저장소 접근 권한, 파일 접근 설정을 함께 관리합니다.
+
+- **호스트가 결정하는 호출자 식별자 사용**
+호스트가 각 미니앱 실행 컨텍스트에 신뢰할 수 있는 App ID를 연결합니다. 브릿지 요청의 권한은 이 식별자를 기준으로 결정하고, JavaScript가 전달한 대상 App ID가 호출자에게 허용된 범위인지 정확히 검사합니다.
+
+- **요청 검증과 접근 거부 처리**
+JSON 형식, 지원하는 action, App ID, key와 value의 자료형·길이를 검증합니다. 빈 식별자와 알 수 없는 식별자를 거부하고, 권한 검사를 통과한 요청에 대해서만 저장소 작업을 수행합니다. 권한 거부 시 후속 처리를 종료하고 정해진 오류 응답을 반환합니다.
+
+- **브릿지 노출과 페이지 이동 제한**
+필요한 네이티브 기능만 노출합니다. 사용하는 브릿지 API의 출처·프레임 검증 기능을 확인하고, 외부 페이지 이동과 iframe 로딩을 허용 목록으로 관리합니다. 민감한 브릿지는 신뢰할 수 있는 콘텐츠에 한정하여 제공합니다.
+
+- **저장소와 민감 데이터 관리**
+조회뿐 아니라 저장·수정·삭제에도 미니앱별 권한 검사를 적용합니다. 영구 저장이 필요한 경우 민감도에 맞는 암호화와 키 관리를 설계합니다. 로그에는 토큰 원문을 제외한 요청 식별 정보와 처리 결과를 기록합니다.
+
+- **미니앱 콘텐츠의 신뢰성 확인**
+외부에서 미니앱 패키지를 받는 구조로 확장할 경우, 배포 주체와 패키지 무결성을 확인한 뒤 호스트 권한을 부여합니다. 미니앱이 수정할 수 있는 CSP와 JavaScript 설정에 의존하는 통제에는 호스트 측 검증을 함께 적용합니다.
 
 ### 2. 🔐 미니앱 (웹/JavaScript 개발자)
-* **웹 표준 저장소 민감 정보 저장 금지**: WebView 환경에서 `document.cookie`, `localStorage`에 토큰이나 개인정보(PII) 저장 절대 금지.
-* **플랫폼 제공 Native Bridge SDK 사용**: 데이터 저장 및 통신 시 반드시 호스트 슈퍼앱이 검증하여 제공하는 Native Bridge API 이용.
-* **CSP(Content Security Policy) 적용**: `<meta http-equiv="Content-Security-Policy" ...>`로 외부 및 무단 스크립트 실행 제한.
+- **민감 데이터의 저장 경로 지정**
+본 PoC의 보안 구성에서는 민감한 테스트 토큰을 호스트의 저장 API로 관리합니다. 일반 웹 저장소에는 민감도와 출처 공유 범위를 검토한 데이터만 보관합니다.
 
+- **입력값 검증과 안전한 화면 출력**
+외부 입력과 저장소에서 읽은 값을 검증합니다. 일반 텍스트를 화면에 표시할 때는 textContent 등 텍스트 출력 API를 사용합니다. HTML 렌더링이 필요한 경우에는 신뢰할 수 있는 정제 처리를 적용합니다.
+
+- **CSP 허용 범위 축소**
+필요한 스크립트와 통신 대상만 허용합니다. 인라인 스크립트를 외부 파일로 옮기거나 nonce·hash 기반 정책을 검토하고, 'unsafe-inline'을 줄인 뒤 정상 기능과 차단 동작을 확인합니다.
+
+- **브릿지 응답과 오류 처리**
+권한 거부와 저장 실패를 명시적으로 처리합니다. 반환된 데이터를 출력하거나 후속 요청에 사용하기 전에 형식과 요청 연관성을 확인합니다.
 ---
 
 ## 🚀 Requirements & Quick Start
