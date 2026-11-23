@@ -1,6 +1,6 @@
 # SuperApp & MiniApp Security Sandbox PoC
 
-안드로이드 WebView 환경에서 발생하는 로컬 파일(`file://`) 보안 취약점과 이를 방어하기 위한 **상용 미니앱(WeChat, Kakao 등) 방식의 보안 샌드박스(Sandbox) 아키텍처**를 실습 및 검증하는 개념 증명(PoC) 프로젝트입니다.
+안드로이드 WebView 환경에서 발생하는 로컬 파일(`file://`) 보안 취약점과 이를 방어하기 위한 **상용 미니앱(WeChat, Kakao 등) 방식의 보안 샌드박스(Sandbox) 아키텍처**를 검증하는 개념 증명(PoC) 프로젝트입니다.
 
 ---
 
@@ -75,7 +75,7 @@ Flutter 호스트는 요청에 담긴 App ID를 각 WebView에 지정된 미니�
 * **호스트 메모리 저장소 사용**: `localStorage`에 기록하는 대신 Flutter 호스트의 메모리 저장소에 보관
 * **Native Bridge 호출**: 모든 데이터 저장/조회는 `SuperAppBridge.setStorage` / `getStorage`를 통해서만 수행.
 * **App ID 기반 권한 검증**: 네이티브 레이어에서 요청자의 `App ID`와 소유자의 `App ID`를 대조하여 다른 미니앱의 데이터 접근을 즉시 차단.
-* **CSP(Content Security Policy) 적용**: 외부 악성 스크립트 실행 및 인라인 스크립트 남용 차단.
+* **CSP(Content Security Policy) 적용**: 외부 스크립트의 로딩 출처 제한 및 'unsafe-inline' 설정으로 인라인 스크립트 실행 허용.
 
 ---
 
